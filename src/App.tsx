@@ -1,26 +1,49 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import "antd/dist/antd.css";
+import "./index.css";
+import { Layout, Menu } from "antd";
+import {
+  UploadOutlined,
+  UserOutlined,
+  VideoCameraOutlined,
+} from "@ant-design/icons";
+import RoutesControl from "./routes";
+import { Link } from "react-router-dom";
+const { Header, Content, Footer, Sider } = Layout;
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App = () => (
+  <Layout className="layout">
+    <Header>
+      <a href="/">
+        <div className="logo" />
+      </a>
+      <Menu
+        theme="dark"
+        mode="horizontal"
+        defaultSelectedKeys={["4"]}
+        items={[
+          { name: "Produção", key: "product" },
+          { name: "Relatórios financeiros", key: "financial" },
+        ].map((item, index) => ({
+          key: `${item.key}`,
+          label: `${item.name}`,
+        }))}
+        onClick={(e) => {
+          window.location.href = `/${e.key}`;
+        }}
+      />
+    </Header>
+    <Content style={{ padding: "0 50px" }}>
+      <RoutesControl />
+    </Content>
+    <Footer
+      style={{
+        textAlign: "center",
+      }}
+    >
+      Projeto para disciplina de banco de dados
+    </Footer>
+  </Layout>
+);
 
 export default App;
