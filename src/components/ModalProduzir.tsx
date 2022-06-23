@@ -10,6 +10,7 @@ import {
   Alert,
 } from "antd";
 import { AnyMxRecord } from "dns";
+import api from "../services/api";
 const { Title } = Typography;
 const { Option } = Select;
 
@@ -27,52 +28,43 @@ interface Ingredient {
 interface Props {
   products: Product[];
   ingredients: Ingredient[];
-  ingredientsColumn: any;
+}
+
+interface ReceiptItem {
+  id: number;
+  name: string;
+  amount: number;
 }
 
 function ModalProduzir(props: Props) {
-  const { products, ingredients, ingredientsColumn } = props;
+  const { products, ingredients } = props;
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [neededIngredients, setNeededIngredients] = useState<Ingredient[]>();
   const [showAlert, setShowAlert] = useState(false);
   const [form] = Form.useForm();
 
-  const ingredientsReceipt = [
-    [
-      {
-        id: 0,
-        name: "Farinha",
-        amount: 1500,
-      },
-      {
-        id: 1,
-        name: "Manteira",
-        amount: 500,
-      },
-      {
-        id: 2,
-        name: "Açúcar",
-        amount: 1000,
-      },
-    ],
-    [
-      {
-        id: 3,
-        name: "Massa de tapioca",
-        amount: 1500,
-      },
-      {
-        id: 4,
-        name: "Coco",
-        amount: 500,
-      },
-      {
-        id: 5,
-        name: "Queijo",
-        amount: 1000,
-      },
-    ],
+  const [receipt, setReceipt] = useState<ReceiptItem[]>([]);
+  const [qtMax, setQtMax] = useState(0);
+
+  const getReceipt = (productId: number) => {
+    api.get(`product/${productId}/ingredients`).then((response) => {
+      setReceipt(response.data);
+      setMaxProducts(response.data);
+    });
+  };
+
+  const receiptColumn = [
+    {
+      title: "Nome",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "Quantidade (g)",
+      dataIndex: "amount",
+      key: "amount",
+    },
   ];
 
   const showModal = () => {
@@ -88,25 +80,44 @@ function ModalProduzir(props: Props) {
   };
 
   const selectProduct = (e: number) => {
-    setNeededIngredients(ingredientsReceipt[e]);
+    getReceipt(e);
   };
 
-  const verifyAmount = (e: any) => {
-    console.log(e);
-    // let neededAmount = 0;
-    // neededIngredients?.map((item) => {
-    //   neededAmount = item.amount * e;
-    //   ingredients.map((ingredient) => {
-    //     if (ingredient.id == item.id) {
-    //       if (ingredient.amount >= neededAmount) {
-    //         setShowAlert(true);
-    //       } else {
-    //         setShowAlert(false);
-    //       }
-    //     }
-    //   });
-    // });
+  const setMaxProducts = (receipt: ReceiptItem[]) => {
+    let isValid = true;
+    let max = 0;
+    while (isValid) {
+      max = max + 1;
+      receipt.map((item) => {
+        ingredients.map((ingredient) => {
+          if (ingredient.id === item.id) {
+            console.log(item.amount * max);
+            if (!(item.amount * max <= ingredient.amount)) {
+              isValid = false;
+              return;
+            }
+          }
+        });
+      });
+    }
+
+    max = max - 1;
+    setQtMax(max);
   };
+
+  const onFinish = async (e: any) => {
+    let date = new Date();
+
+    const object = {
+      productId: parseInt(e.id),
+      amount: parseInt(e.amount),
+      timestamp: date,
+    };
+
+    const response = await api.post("/daily", object);
+    console.log(response);
+  };
+
   return (
     <>
       <Button type="primary" style={{ margin: "10px" }} onClick={showModal}>
@@ -115,33 +126,38 @@ function ModalProduzir(props: Props) {
       <Modal
         title="Iniciando produção"
         visible={isModalVisible}
-        onOk={handleOk}
         onCancel={handleCancel}
+        footer={[<></>]}
       >
         {showAlert && (
           <Alert message="Ingredientes insuficientes" type="error" />
         )}
-        <Form layout="vertical" form={form}>
-          <Form.Item label="Nome do produto">
+        <Form layout="vertical" form={form} onFinish={onFinish}>
+          <Form.Item name="id" label="Nome do produto">
             <Select onChange={selectProduct}>
               {products.map((item) => (
                 <Option value={item.id}>{item.name}</Option>
               ))}
             </Select>
           </Form.Item>
-          <Form.Item label="Quantidade">
+          <Form.Item name="amount" label="Quantidade">
             <Input
+              max={qtMax}
               placeholder="Digite a quantidade"
               type="number"
-              onChange={verifyAmount}
             />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Produzir
+            </Button>
           </Form.Item>
         </Form>
         <div>
           <Title level={4}>Lista de ingredientes necessários</Title>
           <Table
-            dataSource={neededIngredients}
-            columns={ingredientsColumn}
+            dataSource={receipt}
+            columns={receiptColumn}
             style={{ minHeight: "80%" }}
             pagination={{ pageSize: 4 }}
           />

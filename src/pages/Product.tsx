@@ -1,29 +1,58 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Typography, List, Button, Table, Modal } from "antd";
 import ModalProduzir from "../components/ModalProduzir";
 import ModalVenda from "../components/ModalVenda";
 import ModalCadastro from "../components/ModalCadastro";
+import api from "../services/api";
+import { useFetch } from "../hooks/useFetch";
+import ModalCompra from "../components/ModalCompra";
 const { Title } = Typography;
 
+interface Ingredient {
+  id: number;
+  name: string;
+  amount: number;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  amount: number;
+}
+
+interface Daily {
+  productId: number;
+  amount: number;
+  time: string;
+  id: number;
+  name?: string;
+}
+
 function Product() {
-  const products = [
-    {
-      id: 0,
-      name: "Pão francês",
-    },
-    {
-      id: 1,
-      name: "Pão doce",
-    },
-    {
-      id: 2,
-      name: "Bolo",
-    },
-    {
-      id: 3,
-      name: "Pão carteira",
-    },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [dailyProducts, setDailyProducts] = useState<Daily[]>([]);
+  useEffect(() => {
+    api.get("/product").then((response) => {
+      setProducts(response.data);
+    });
+  }, []);
+
+  useEffect(() => {
+    api.get("/daily/2022-06-23").then((response) => {
+      let dailys = response.data;
+
+      dailys.map((item: Daily) => {
+        let product = products.find((product) => product.id === item.id);
+        if (product && product.name) {
+          item.name = product.name;
+        }
+        let time = new Date(item.time);
+        item.time = `${time.getHours()}:${time.getMinutes()}`;
+      });
+      console.log(dailys);
+      setDailyProducts(response.data);
+    });
+  }, products);
 
   const productColumn = [
     {
@@ -31,20 +60,10 @@ function Product() {
       dataIndex: "name",
       key: "name",
     },
-  ];
-
-  const dailyProducts = [
     {
-      name: "pao_frances",
-      amount: 10,
-      date: "2022-06-13",
-      made_at: "07:00:00",
-    },
-    {
-      name: "pao_doce",
-      amount: 22,
-      date: "2022-06-13",
-      made_at: "09:00:00",
+      title: "Quantidade(unidades)",
+      dataIndex: "amount",
+      key: "amount",
     },
   ];
 
@@ -61,28 +80,13 @@ function Product() {
     },
     {
       title: "Horário da produção",
-      dataIndex: "made_at",
-      key: "made_at",
+      dataIndex: "time",
+      key: "time",
     },
   ];
 
-  const ingredients = [
-    {
-      id: 0,
-      name: "Farinha",
-      amount: 1500,
-    },
-    {
-      id: 1,
-      name: "Manteira",
-      amount: 500,
-    },
-    {
-      id: 2,
-      name: "Açúcar",
-      amount: 1000,
-    },
-  ];
+  const { data } = useFetch<Ingredient[]>("/ingredient");
+  const ingredients: Ingredient[] = data ? data : [];
 
   const ingredientColumns = [
     {
@@ -117,17 +121,23 @@ function Product() {
           marginBottom: "10px",
         }}
       >
-        <ModalCadastro itemType="ingrediente" />
-        <ModalCadastro itemType="produto" />
-        <ModalProduzir
-          products={products}
-          ingredients={ingredients}
-          ingredientsColumn={ingredientColumns}
-        />
+        <ModalCompra ingredients={ingredients} />
+        <ModalCadastro itemType="ingrediente" ingredients={ingredients} />
+        <ModalCadastro itemType="produto" ingredients={ingredients} />
+        <ModalProduzir products={products} ingredients={ingredients} />
         <ModalVenda products={products} />
       </div>
       <div style={{ display: "flex", width: "100%" }}>
-        <div style={{ width: "50%" }}>
+        <div style={{ width: "20%" }}>
+          <Title level={4}>Produtos em estoque </Title>
+          <Table
+            dataSource={products}
+            columns={productColumn}
+            style={{ minHeight: "80%", marginRight: "40px" }}
+            pagination={{ pageSize: 4 }}
+          />
+        </div>
+        <div style={{ width: "20%" }}>
           <Title level={4}>Produção diária </Title>
           <Table
             dataSource={dailyProducts}

@@ -1,5 +1,9 @@
+.ant-layout {
+  min-height: 100vh !important;
+}
+
 .site-layout-content {
-  min-height: 280px;
+  min-height: 289px;
   padding: 24px;
   background: #fff;
 }
@@ -20,6 +24,7 @@
 
 .site-layout-background {
   background-color: #fff;
+  min-height: 80vh !important;
 }
 
 .ant-table-thead .ant-table-cell {
