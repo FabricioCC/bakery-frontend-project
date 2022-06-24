@@ -38,7 +38,16 @@ function Product() {
   }, []);
 
   useEffect(() => {
-    api.get("/daily/2022-06-23").then((response) => {
+    const date = new Date();
+    const extendedDate = `${
+      date.getFullYear()
+    }-${
+      ("0" + (date.getMonth() + 1)).slice(-2)
+    }-${
+      date.getDate()
+    }`
+
+    api.get("/daily/").then((response) => {
       let dailys = response.data;
 
       dailys.map((item: Daily) => {
